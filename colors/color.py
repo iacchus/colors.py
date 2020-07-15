@@ -5,7 +5,7 @@ Convert colors between rgb, hsv, and hex, perform arithmetic, blend modes,
 and generate random colors within boundaries.
 """
 import colorsys
-import random as random_
+import random
 import re
 
 #__all__ = ('Color', 'HSVColor', 'RGBColor', 'HexColor', 'ColorWheel',
@@ -38,7 +38,7 @@ class Color(object):
             self.from_yiq(yiq)
 
         else:
-            self.from_rgb(DEFAULT_COLOR)
+            self.from_hex_triplet(DEFAULT_COLOR)
 
     def from_hex_triplet(self, hex_triplet):
 
@@ -46,17 +46,13 @@ class Color(object):
 
         if(hex_match):
 
-            self.hex_triplet = "".join(hex_match).lower()
-            self.rgb = map(tuple(lambda x: int(x, base=16), hex_match))
+            self.hex_triplet = "".join(hex_match.groups()).lower()
+            self.rgb = tuple(map(lambda x: int(x, base=16), hex_match.groups()))
             self._from_self_rgb()
-#             self.hsv = colorsys.rgb_to_hsv(*rgb)
-#             self.hls = colorsys.rgb_to_hls(*rgb)
-#             self.yiq = colorsys.rgb_to_yiq(*rgb)
-
-            self.color = self.rgb
 
         else:
             raise ValueError('Invalid hex color.')
+
 
     def from_rgb(self, rgb):
 
@@ -66,12 +62,7 @@ class Color(object):
 
         self.rgb = rgb
         self._from_self_rgb()
-#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
-#         self.hsv = colorsys.rgb_to_hsv(*rgb)
-#         self.hls = colorsys.rgb_to_hls(*rgb)
-#         self.yiq = colorsys.rgb_to_yiq(*rgb)
 
-        self.color = self.rgb
 
     def from_hsv(self, hsv):
 
@@ -86,31 +77,16 @@ class Color(object):
 
         self.rgb = hsv_to_rgb(*hsv)
         self._from_self_rgb()
-#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
-#         self.hsv = colorsys.rgb_to_hsv(*self.rgb)
-#         self.hls = colorsys.rgb_to_hls(*self.rgb)
-#         self.yiq = colorsys.rgb_to_yiq(*self.rgb)
-#         self.color = self.rgb
 
 
     def from_hls(self, hls):
         self.rgb = hls_to_rgb(*hls)
         self._from_self_rgb()
-#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
-#         self.hsv = colorsys.rgb_to_hsv(*self.rgb)
-#         self.hls = colorsys.rgb_to_hls(*self.rgb)
-#         self.yiq = colorsys.rgb_to_yiq(*self.rgb)
-#         self.color = self.rgb
 
 
     def from_yiq(self, yiq):
-        self.rgb = hsv_to_rgb(*hsv)
+        self.rgb = hsv_to_rgb(*yiq)
         self._from_self_rgb()
-#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
-#         self.hsv = colorsys.rgb_to_hsv(*self.rgb)
-#         self.hls = colorsys.rgb_to_hls(*self.rgb)
-#         self.yiq = colorsys.rgb_to_yiq(*self.rgb)
-#         self.color = self.rgb
 
 
     def _from_self_rgb(self):
@@ -126,27 +102,23 @@ class Color(object):
         else:
             return None
 
-#     @property
-#     def hex(self):
-#         """ Hex is used the same way for all types. """
-#         return HexColor('%02x%02x%02x' % tuple(self.rgb))
-# 
-#     @property
-#     def rgb(self):
-#         raise NotImplementedError
-# 
-#     @property
-#     def hsv(self):
-#         raise NotImplementedError
+    def randomize(self):
+        rand_rgb = tuple(random.randrange(256) for _ in range(3))
+        self.from_rgb(rand_rgb)
+
 
     def multiply(self, other):
-        self_rgb = self.rgb
-        other_rgb = other.rgb
-        return RGBColor(
-            self_rgb.red * other_rgb.red / 255.0,
-            self_rgb.green * other_rgb.green / 255.0,
-            self_rgb.blue * other_rgb.blue / 255.0
+        #self_rgb = self.rgb
+        #other_rgb = other.rgb
+        #return RGBColor(
+        return Color(
+            tuple(map(lambda x,y: ((x * y) / 255.0), zip(self.rgb, other.rgb)))
         )
+#         return Color(
+#             self_rgb.red * other_rgb.red / 255.0,
+#             self_rgb.green * other_rgb.green / 255.0,
+#             self_rgb.blue * other_rgb.blue / 255.0
+#         )
 
     __mul__ = multiply
 
@@ -217,7 +189,7 @@ class Color(object):
            and self_rgb.blue == other_rgb.blue
 
     def __contains__(self, item):
-        return item in self._color
+        return item in self.color
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -233,101 +205,101 @@ class Color(object):
         50
         0
         """
-        return iter(self._color)
+        return iter(self.color)
 
     def __len__(self):
-        return len(self._color)
+        return len(self.color)
 
     def __str__(self):
-        return ', '.join(map(str, self._color))
+        return ', '.join(map(str, self.color))
 
-    def __repr__(self):
-        base = u'<%s %s>'
-        properties = [
-            '%s: %s' % (prop, getattr(self, prop)) \
-                for prop in self.Meta.properties
-        ]
-        return base % (self.__class__.__name__, ', '.join(properties))
-
-
-class HSVColor(Color):
-    """ Hue Saturation Value """
-
-    def __init__(self, h=0, s=0, v=0):
-        if s > 1:
-            raise ValueError('Saturation has to be less than 1')
-        if v > 1:
-            raise ValueError('Value has to be less than 1')
-
-        # Hue can safely circle around 1
-        if h >= 1:
-            h -= int(h)
-
-        self._color = h, s, v
-
-    @property
-    def rgb(self):
-        return RGBColor(*map(lambda c: c * 255, colorsys.hsv_to_rgb(*self._color)))
-
-    @property
-    def hsv(self):
-        return self
-
-    class Meta:
-        properties = ('hue', 'saturation', 'value')
+#     def __repr__(self):
+#         base = u'<%s %s>'
+#         properties = [
+#             '%s: %s' % (prop, getattr(self, prop)) \
+#                 for prop in self.Meta.properties
+#         ]
+#         return base % (self.__class__.__name__, ', '.join(properties))
 
 
-class RGBColor(Color):
-    """ Red Green Blue """
+# class HSVColor(Color):
+#     """ Hue Saturation Value """
+# 
+#     def __init__(self, h=0, s=0, v=0):
+#         if s > 1:
+#             raise ValueError('Saturation has to be less than 1')
+#         if v > 1:
+#             raise ValueError('Value has to be less than 1')
+# 
+#         # Hue can safely circle around 1
+#         if h >= 1:
+#             h -= int(h)
+# 
+#         self._color = h, s, v
+# 
+#     @property
+#     def rgb(self):
+#         return RGBColor(*map(lambda c: c * 255, colorsys.hsv_to_rgb(*self._color)))
+# 
+#     @property
+#     def hsv(self):
+#         return self
+# 
+#     class Meta:
+#         properties = ('hue', 'saturation', 'value')
 
-    def __init__(self, r=0, g=0, b=0):
-        self._color = r, g, b
-        for c in self._color:
-            if c < 0 or c > 255:
-                raise ValueError('Color values must be between 0 and 255')
 
-    @property
-    def rgb(self):
-        return self
+# class RGBColor(Color):
+#     """ Red Green Blue """
+# 
+#     def __init__(self, r=0, g=0, b=0):
+#         self._color = r, g, b
+#         for c in self._color:
+#             if c < 0 or c > 255:
+#                 raise ValueError('Color values must be between 0 and 255')
+# 
+#     @property
+#     def rgb(self):
+#         return self
+# 
+#     @property
+#     def hsv(self):
+#         return HSVColor(*colorsys.rgb_to_hsv(*map(lambda c: c / 255.0, self._color)))
+# 
+#     class Meta:
+#         properties = ('red', 'green', 'blue')
 
-    @property
-    def hsv(self):
-        return HSVColor(*colorsys.rgb_to_hsv(*map(lambda c: c / 255.0, self._color)))
 
-    class Meta:
-        properties = ('red', 'green', 'blue')
-
-
-class HexColor(RGBColor):
-    """ Typical 6 digit hexadecimal colors.
-
-    Warning: accuracy is lost when converting a color to hex
-    """
-
-    def __init__(self, hex='000000'):
-        if len(hex) != 6:
-            raise ValueError('Hex color must be 6 digits')
-
-        hex = hex.lower()
-        if not set(hex).issubset(HEX_RANGE):
-            raise ValueError('Not a valid hex number')
-
-        self._color = hex[:2], hex[2:4], hex[4:6]
-
-    @property
-    def rgb(self):
-        return RGBColor(*[int(c, 16) for c in self._color])
-
-    @property
-    def hsv(self):
-        return self.rgb.hsv
-
-    @property
-    def hex(self):
-        return self
-
-    def __str__(self):
-        return '%s%s%s' % self._color
+# class HexColor(RGBColor):
+#     """ Typical 6 digit hexadecimal colors.
+# 
+#     Warning: accuracy is lost when converting a color to hex
+#     """
+# 
+#     def __init__(self, hex='000000'):
+#         if len(hex) != 6:
+#             raise ValueError('Hex color must be 6 digits')
+# 
+#         hex = hex.lower()
+#         if not set(hex).issubset(HEX_RANGE):
+#             raise ValueError('Not a valid hex number')
+# 
+#         self._color = hex[:2], hex[2:4], hex[4:6]
+# 
+#     @property
+#     def rgb(self):
+#         return RGBColor(*[int(c, 16) for c in self._color])
+# 
+#     @property
+#     def hsv(self):
+#         return self.rgb.hsv
+# 
+#     @property
+#     def hex(self):
+#         return self
+# 
+#     def __str__(self):
+#         return '%s%s%s' % self._color
 
 
 class ColorWheel(object):
@@ -361,45 +333,46 @@ class ColorWheel(object):
         return HSVColor(self._phase, 1, 0.8)
 
 
-def random():  # This name might be a bad idea?
-    """ Generate a random color.
-
-    >>> from colors import random
-    >>> random()
-    <HSVColor hue: 0.310089903395, saturation: 0.765033516918, value: 0.264921257867>
-    >>> print '#%s' % random().hex
-    #ae47a7
-
-    """
-    return HSVColor(random_.random(), random_.random(), random_.random())
+# def random():  # This name might be a bad idea?
+#     """ Generate a random color.
+# 
+#     >>> from colors import random
+#     >>> random()
+#     <HSVColor hue: 0.310089903395, saturation: 0.765033516918, value: 0.264921257867>
+#     >>> print '#%s' % random().hex
+#     #ae47a7
+# 
+#     """
+#     return HSVColor(random_.random(), random_.random(), random_.random())
 
 # Simple aliases
-rgb = RGBColor  # rgb(100, 100, 100), or rgb(r=100, g=100, b=100)
-hsv = HSVColor  # hsv(0.5, 1, 1), or hsv(h=0.5, s=1, v=1)
-hex = HexColor  # hex('BADA55')
+# rgb = RGBColor  # rgb(100, 100, 100), or rgb(r=100, g=100, b=100)
+# hsv = HSVColor  # hsv(0.5, 1, 1), or hsv(h=0.5, s=1, v=1)
+# hex = HexColor  # hex('BADA55')
 
 
-"""
-colors.primary
-==============
-"""
-
-black = rgb(0, 0, 0)
-white = rgb(255, 255, 255)
-red = rgb(255, 0, 0)
-green = rgb(0, 255, 0)
-blue = rgb(0, 0, 255)
-
-
-"""
-colors.rainbow
-==============
-ROYGBIV!
-
-red = rgb(255, 0, 0)
-orange = rgb(255, 165, 0)
-yellow = rgb(255, 255, 0)
-green = rgb(0, 128, 0)
-blue = rgb(0, 0, 255)
-indigo = rgb(75, 0, 130)
-violet = rgb(238, 130, 238)
+# """
+# colors.primary
+# ==============
+# """
+# 
+# black = Color(0, 0, 0)
+# white = Color(255, 255, 255)
+# red = Color(255, 0, 0)
+# green = Color(0, 255, 0)
+# blue = Color(0, 0, 255)
+# 
+# 
+# """
+# colors.rainbow
+# ==============
+# ROYGBIV!
+# """
+# 
+# red = Color(255, 0, 0)
+# orange = Color(255, 165, 0)
+# yellow = Color(255, 255, 0)
+# green = Color(0, 128, 0)
+# blue = Color(0, 0, 255)
+# indigo = Color(75, 0, 130)
+# violet = Color(238, 130, 238)
