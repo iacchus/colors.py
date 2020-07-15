@@ -8,13 +8,8 @@ import colorsys
 import random
 import re
 
-#__all__ = ('Color', 'HSVColor', 'RGBColor', 'HexColor', 'ColorWheel',
-#           'rgb', 'hsv', 'hex', 'random')
-
-#HEX_RANGE = frozenset('0123456789abcdef')
 HEX_COLOR_PATTERN = '^#?([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})$'
 DEFAULT_COLOR = '#333333'
-
 
 
 class Color(object):
@@ -112,7 +107,8 @@ class Color(object):
         #other_rgb = other.rgb
         #return RGBColor(
         return Color(
-            tuple(map(lambda x,y: ((x * y) / 255.0), zip(self.rgb, other.rgb)))
+            rgb=tuple(map(lambda x, y: ((x * y) / 255.0),
+                          zip(self.rgb, other.rgb)))
         )
 #         return Color(
 #             self_rgb.red * other_rgb.red / 255.0,
@@ -123,13 +119,17 @@ class Color(object):
     __mul__ = multiply
 
     def add(self, other):
-        self_rgb = self.rgb
-        other_rgb = other.rgb
-        return RGBColor(
-            min(255, self_rgb.red + other_rgb.red),
-            min(255, self_rgb.green + other_rgb.green),
-            min(255, self_rgb.blue + other_rgb.blue),
+#         self_rgb = self.rgb
+#         other_rgb = other.rgb
+        return Color(
+            rgb=tuple(map(lambda x, y: min(255, (x + y)),
+                          zip(self.rgb, other.rgb)))
         )
+#         return RGBColor(
+#             min(255, self_rgb.red + other_rgb.red),
+#             min(255, self_rgb.green + other_rgb.green),
+#             min(255, self_rgb.blue + other_rgb.blue),
+#         )
 
     __add__ = add
 
@@ -138,28 +138,44 @@ class Color(object):
         other_rgb = other.rgb
         if 0 in other_rgb:
             raise ZeroDivisionError
-        return RGBColor(
-            self_rgb.red / float(other_rgb.red),
-            self_rgb.green / float(other_rgb.green),
-            self_rgb.blue / float(other_rgb.blue),
+
+        return Color(
+            rgb=tuple(map(lambda x, y: x / float(y)),
+                          zip(self.rgb, other.rgb)))
         )
+
+#         return RGBColor(
+#             self_rgb.red / float(other_rgb.red),
+#             self_rgb.green / float(other_rgb.green),
+#             self_rgb.blue / float(other_rgb.blue),
+#         )
 
     __div__ = divide
 
     def subtract(self, other):
-        self_rgb = self.rgb
-        other_rgb = other.rgb
-        return RGBColor(
-            max(0, (self_rgb.red - other_rgb.red)),
-            max(0, (self_rgb.green - other_rgb.green)),
-            max(0, (self_rgb.blue - other_rgb.blue)),
+#         self_rgb = self.rgb
+#         other_rgb = other.rgb
+        return Color(
+            rgb=tuple(map(lambda x, y: max(255, (x - y)),
+                          zip(self.rgb, other.rgb)))
         )
+#         return RGBColor(
+#             max(0, (self_rgb.red - other_rgb.red)),
+#             max(0, (self_rgb.green - other_rgb.green)),
+#             max(0, (self_rgb.blue - other_rgb.blue)),
+#         )
 
     __sub__ = subtract
 
     def screen(self, other):
         self_rgb = self.rgb
         other_rgb = other.rgb
+
+        return Color(
+            rgb=tuple(map(lambda x, y: max(255, (x - y)),
+                          zip(self.rgb, other.rgb)))
+        )
+       
         return RGBColor(
             255 - (((255 - self_rgb.red) * (255 - other_rgb.red)) / 255.0),
             255 - (((255 - self_rgb.green) * (255 - other_rgb.green)) / 255.0),
