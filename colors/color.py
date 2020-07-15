@@ -8,14 +8,38 @@ import colorsys
 import random
 import re
 
+
 HEX_COLOR_PATTERN = '^#?([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})$'
 DEFAULT_COLOR = '#333333'
 
 
 class Color(object):
 
+
     def __init__(self, hex_triplet=None, rgb=None, hsv=None, hls=None,
                  yiq=None):
+        """Initializes a Color instance with a given argument.
+
+        Initializes a Color instance with a giving argument, populating the
+        other color standards. If none of them is present, the Color is
+        initialized with the `DEFAULT_COLOR` value.
+
+        Args:
+            hex_triplet (str): A rgb color in hexadecimal format like `#ffffff`
+                or `ffffff`. Both are accepted.
+            rgb (tuple): A tuple with 3 `int`s within the range 0-255,
+                like `(255, 255, 255)`, containing the colors for red, green
+                and blue.
+            hsv (tuple): A tuple with 3 `floats`s. For more information about
+                the expected values, please refer to the documentation for
+                Python's `colorsys`.
+            hls (tuple): A tuple with 3 `floats`s. For more information about
+                the expected values, please refer to the documentation for
+                Python's `colorsys`.
+            yiq (tuple): A tuple with 3 `floats`s. For more information about
+                the expected values, please refer to the documentation for
+                Python's `colorsys`.
+        """
 
         if hex_triplet:
             self.from_hex_triplet(hex_triplet)
@@ -35,7 +59,17 @@ class Color(object):
         else:
             self.from_hex_triplet(DEFAULT_COLOR)
 
+
     def from_hex_triplet(self, hex_triplet):
+        """Transforms a Color instance from a hex triplet.
+
+        Transforms a Color instance from a hex triplet with format like
+            `#ffffff` ou `ffffff`
+
+        Args:
+            hex_triplet (str): A rgb color in hexadecimal format like `#ffffff`
+                or `ffffff`. Both are accepted.
+        """
 
         hex_match = re.match(HEX_COLOR_PATTERN, hex_triplet)
 
@@ -50,7 +84,16 @@ class Color(object):
 
 
     def from_rgb(self, rgb):
+        """Transforms a Color instance from rgb tuple.
 
+        Transforms a Color instance from a rgb tuple, with three `int`s, like
+            `(255, 255, 255)`
+
+        Args:
+            rgb (tuple): A tuple with 3 `int`s within the range 0-255,
+                like `(255, 255, 255)`, containing the colors for red, green
+                and blue.
+        """
         for c in rgb:
             if c < 0 or c > 255:
                 raise ValueError('Color values must be between 0 and 255')
@@ -88,8 +131,10 @@ class Color(object):
 
     def _from_self_rgb(self):
         if self.rgb:
-            self.rgb_fraction = tuple(map(lambda x: x / 255.0, self.rgb))
-            self.hex_triplet = "".join(map(lambda x: format(x, "x"), self.rgb))
+            #self.rgb_fraction = tuple(map(lambda x: x / 255.0, self.rgb))
+            self.rgb_fraction = tuple((x / 255.0) for x in self.rgb)
+            self.hex_triplet = "".join(map(lambda color: format(color, "x"),
+                                           self.rgb))
             self.hsv = colorsys.rgb_to_hsv(*self.rgb_fraction)
             self.hls = colorsys.rgb_to_hls(*self.rgb_fraction)
             self.yiq = colorsys.rgb_to_yiq(*self.rgb_fraction)
@@ -100,54 +145,54 @@ class Color(object):
             return None
 
     def randomize(self):
+        """Transforms the Color instance in a random color.  """
+
         rand_rgb = tuple(random.randrange(256) for _ in range(3))
         self.from_rgb(rand_rgb)
 
 
     def multiply(self, other):
-        return Color(
-            rgb=tuple(map(lambda x, y: ((x * y) / 255.0),
-                          zip(self.rgb, other.rgb)))
-        )
+
+        rgb = tuple(((x * y) /255.0) for x, y in zip(self.rgb, other.rgb))
+
+        return Color(rgb=rgb)
 
     __mul__ = multiply
 
     def add(self, other):
 
-        return Color(
-            rgb=tuple(map(lambda x, y: min(255, (x + y)),
-                          zip(self.rgb, other.rgb)))
-        )
+        rgb = tuple((x + y) for x, y in zip(self.rgb, other.rgb))
+        return Color(rgb=rgb)
 
     __add__ = add
 
     def divide(self, other):
 
-        return Color(
-            rgb=tuple(map(lambda x, y: x / float(y)),
-                          zip(self.rgb, other.rgb))
-        )
+        rgb = tuple((x / float(y)) for x, y in zip(self.rgb, other.rgb))
+        return Color(rgb=rgb)
+
+
 
     __div__ = divide
 
-    def subtract(self, other):
+
+def subtract(self, other):
 #         self_rgb = self.rgb
 #         other_rgb = other.rgb
-        return Color(
-            rgb=tuple(map(lambda x, y: max(255, (x - y)),
-                          zip(self.rgb, other.rgb)))
-        )
-#         return RGBColor(
-#             max(0, (self_rgb.red - other_rgb.red)),
-#             max(0, (self_rgb.green - other_rgb.green)),
-#             max(0, (self_rgb.blue - other_rgb.blue)),
-#         )
+        rgb = tuple(max(255, (x - y)) for x, y in zip(self.rgb, other.rgb))
+        return Color(rgb=rgb)
+
 
     __sub__ = subtract
+
 
     def screen(self, other):
 #         self_rgb = self.rgb
 #         other_rgb = other.rgb
+
+        rgb = tuple((255-(((255-x)*(255-y))/255.0)) for x, y in zip(self.rgb,
+                                                                    other.rgb))
+        return Color(rgb=rgb)
 
         return Color(
             rgb=tuple(map(lambda x, y: 255 - (((255 - x) * (255 - y)) / 255.0),
@@ -162,7 +207,9 @@ class Color(object):
 
     def difference(self, other):
 #         self_rgb = self.rgb
-#         other_rgb = other.rgb
+#         other_rgb = other.rgb 
+        rgb = tuple(abs(x - y) for x, y in zip(self.rgb, other.rgb))
+        return Color(rgb=rgb)
         return Color(
             rgb=tuple(map(lambda x, y: abs(x - y), zip(self.rgb, other.rgb)))
         )
@@ -180,15 +227,9 @@ class Color(object):
 
     # TODO: make color __hash__able and use it for comparisons
     def __eq__(self, other):
-#         self_rgb = self.rgb
-#         other_rgb = other.rgb
-        if all(map(lambda x, y: x == y, zip(self.rgb, other.rgb))):
-            return True
-        else:
-            return False
-#         return self_rgb.red == other_rgb.red \
-#            and self_rgb.green == other_rgb.green \
-#            and self_rgb.blue == other_rgb.blue
+        is_equal = tuple((x == y) for x, y in zip(self.rgb, other.rgb))
+
+        return all(is_equal)
 
     def __contains__(self, item):
         return item in self.color
