@@ -6,45 +6,138 @@ and generate random colors within boundaries.
 """
 import colorsys
 import random as random_
+import re
 
-__all__ = ('Color', 'HSVColor', 'RGBColor', 'HexColor', 'ColorWheel',
-           'rgb', 'hsv', 'hex', 'random')
+#__all__ = ('Color', 'HSVColor', 'RGBColor', 'HexColor', 'ColorWheel',
+#           'rgb', 'hsv', 'hex', 'random')
 
-HEX_RANGE = frozenset('0123456789abcdef')
+#HEX_RANGE = frozenset('0123456789abcdef')
+HEX_COLOR_PATTERN = '^#?([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})$'
+DEFAULT_COLOR = '#333333'
 
-
-class _ColorMetaClass(type):
-    """
-    Metaclass for Color to simply map the cls.Meta.properties to getters.
-
-    >>> RGBColor(r=150, g=0, b=100).red
-    150
-    """
-    def __new__(cls, name, bases, attrs):
-        # Check for internal Meta class providing a property map
-        if 'Meta' in attrs and hasattr(attrs['Meta'], 'properties'):
-            for index, prop in enumerate(attrs['Meta'].properties):
-                # Assign pretty getters to each property name
-                attrs[prop] = property(lambda self, index=index: self._color[index])
-        return super(_ColorMetaClass, cls).__new__(cls, name, bases, attrs)
 
 
 class Color(object):
-    """ Abstract base class for all color types. """
-    __metaclass__ = _ColorMetaClass
 
-    @property
-    def hex(self):
-        """ Hex is used the same way for all types. """
-        return HexColor('%02x%02x%02x' % tuple(self.rgb))
+    def __init__(self, hex_triplet=None, rgb=None, hsv=None, hls=None,
+                 yiq=None):
 
-    @property
-    def rgb(self):
-        raise NotImplementedError
+        if hex_triplet:
+            self.from_hex_triplet(hex_triplet)
 
-    @property
-    def hsv(self):
-        raise NotImplementedError
+        elif rgb:
+            self.from_rgb(rgb)
+
+        elif hsv:
+            self.from_hsv(hsv)
+
+        elif hls:
+            self.from_hls(hls)
+
+        elif yiq:
+            self.from_yiq(yiq)
+
+        else:
+            self.from_rgb(DEFAULT_COLOR)
+
+    def from_hex_triplet(self, hex_triplet):
+
+        hex_match = re.match(HEX_COLOR_PATTERN, hex_triplet)
+
+        if(hex_match):
+
+            self.hex_triplet = "".join(hex_match).lower()
+            self.rgb = map(tuple(lambda x: int(x, base=16), hex_match))
+            self._from_self_rgb()
+#             self.hsv = colorsys.rgb_to_hsv(*rgb)
+#             self.hls = colorsys.rgb_to_hls(*rgb)
+#             self.yiq = colorsys.rgb_to_yiq(*rgb)
+
+            self.color = self.rgb
+
+        else:
+            raise ValueError('Invalid hex color.')
+
+    def from_rgb(self, rgb):
+
+        for c in rgb:
+            if c < 0 or c > 255:
+                raise ValueError('Color values must be between 0 and 255')
+
+        self.rgb = rgb
+        self._from_self_rgb()
+#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
+#         self.hsv = colorsys.rgb_to_hsv(*rgb)
+#         self.hls = colorsys.rgb_to_hls(*rgb)
+#         self.yiq = colorsys.rgb_to_yiq(*rgb)
+
+        self.color = self.rgb
+
+    def from_hsv(self, hsv):
+
+        if s > 1:
+            raise ValueError('Saturation has to be less than 1')
+        if v > 1:
+            raise ValueError('Value has to be less than 1')
+
+        # Hue can safely circle around 1
+        if h >= 1:
+            h -= int(h)
+
+        self.rgb = hsv_to_rgb(*hsv)
+        self._from_self_rgb()
+#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
+#         self.hsv = colorsys.rgb_to_hsv(*self.rgb)
+#         self.hls = colorsys.rgb_to_hls(*self.rgb)
+#         self.yiq = colorsys.rgb_to_yiq(*self.rgb)
+#         self.color = self.rgb
+
+
+    def from_hls(self, hls):
+        self.rgb = hls_to_rgb(*hls)
+        self._from_self_rgb()
+#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
+#         self.hsv = colorsys.rgb_to_hsv(*self.rgb)
+#         self.hls = colorsys.rgb_to_hls(*self.rgb)
+#         self.yiq = colorsys.rgb_to_yiq(*self.rgb)
+#         self.color = self.rgb
+
+
+    def from_yiq(self, yiq):
+        self.rgb = hsv_to_rgb(*hsv)
+        self._from_self_rgb()
+#         self.hex_triplet = "".join(map(lambda x: format(x, "0x"), self.rgb))
+#         self.hsv = colorsys.rgb_to_hsv(*self.rgb)
+#         self.hls = colorsys.rgb_to_hls(*self.rgb)
+#         self.yiq = colorsys.rgb_to_yiq(*self.rgb)
+#         self.color = self.rgb
+
+
+    def _from_self_rgb(self):
+        if self.rgb:
+            self.rgb_fraction = tuple(map(lambda x: x / 255.0, self.rgb))
+            self.hex_triplet = "".join(map(lambda x: format(x, "x"), self.rgb))
+            self.hsv = colorsys.rgb_to_hsv(*self.rgb_fraction)
+            self.hls = colorsys.rgb_to_hls(*self.rgb_fraction)
+            self.yiq = colorsys.rgb_to_yiq(*self.rgb_fraction)
+
+            self.color = self.rgb
+
+        else:
+            return None
+
+#     @property
+#     def hex(self):
+#         """ Hex is used the same way for all types. """
+#         return HexColor('%02x%02x%02x' % tuple(self.rgb))
+# 
+#     @property
+#     def rgb(self):
+#         raise NotImplementedError
+# 
+#     @property
+#     def hsv(self):
+#         raise NotImplementedError
 
     def multiply(self, other):
         self_rgb = self.rgb
@@ -284,3 +377,29 @@ def random():  # This name might be a bad idea?
 rgb = RGBColor  # rgb(100, 100, 100), or rgb(r=100, g=100, b=100)
 hsv = HSVColor  # hsv(0.5, 1, 1), or hsv(h=0.5, s=1, v=1)
 hex = HexColor  # hex('BADA55')
+
+
+"""
+colors.primary
+==============
+"""
+
+black = rgb(0, 0, 0)
+white = rgb(255, 255, 255)
+red = rgb(255, 0, 0)
+green = rgb(0, 255, 0)
+blue = rgb(0, 0, 255)
+
+
+"""
+colors.rainbow
+==============
+ROYGBIV!
+
+red = rgb(255, 0, 0)
+orange = rgb(255, 165, 0)
+yellow = rgb(255, 255, 0)
+green = rgb(0, 128, 0)
+blue = rgb(0, 0, 255)
+indigo = rgb(75, 0, 130)
+violet = rgb(238, 130, 238)

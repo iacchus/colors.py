@@ -10,9 +10,9 @@ from setuptools import setup, find_packages
 setup(
     name='colors.py',
     version='0.2.2',
-    author='Matt Robenolt',
-    author_email='matt@ydekproductions.com',
-    url='https://github.com/mattrobenolt/colors.py',
+    author='Iacchus',
+    author_email='kassivs.@gmail.com',
+    url='https://github.com/iacchus/color.py',
     description='Convert and manipulate color values',
     long_description=__doc__,
     license='BSD',
