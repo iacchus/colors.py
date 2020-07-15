@@ -171,61 +171,41 @@ class Color(object):
         rgb = tuple((x / float(y)) for x, y in zip(self.rgb, other.rgb))
         return Color(rgb=rgb)
 
-
-
     __div__ = divide
 
 
-def subtract(self, other):
-#         self_rgb = self.rgb
-#         other_rgb = other.rgb
-        rgb = tuple(max(255, (x - y)) for x, y in zip(self.rgb, other.rgb))
-        return Color(rgb=rgb)
+    def subtract(self, other):
 
+        rgb = tuple(max(255, (x - y)) for x, y in zip(self.rgb, other.rgb))
+
+        return Color(rgb=rgb)
 
     __sub__ = subtract
 
 
     def screen(self, other):
-#         self_rgb = self.rgb
-#         other_rgb = other.rgb
 
         rgb = tuple((255-(((255-x)*(255-y))/255.0)) for x, y in zip(self.rgb,
                                                                     other.rgb))
+
         return Color(rgb=rgb)
 
-        return Color(
-            rgb=tuple(map(lambda x, y: 255 - (((255 - x) * (255 - y)) / 255.0),
-                          zip(self.rgb, other.rgb)))
-        )
-
-#         return RGBColor(
-#             255 - (((255 - self_rgb.red) * (255 - other_rgb.red)) / 255.0),
-#             255 - (((255 - self_rgb.green) * (255 - other_rgb.green)) / 255.0),
-#             255 - (((255 - self_rgb.blue) * (255 - other_rgb.blue)) / 255.0),
-#         )
 
     def difference(self, other):
-#         self_rgb = self.rgb
-#         other_rgb = other.rgb 
+
         rgb = tuple(abs(x - y) for x, y in zip(self.rgb, other.rgb))
         return Color(rgb=rgb)
-        return Color(
-            rgb=tuple(map(lambda x, y: abs(x - y), zip(self.rgb, other.rgb)))
-        )
-#         return RGBColor(
-#             abs(self_rgb.red - other_rgb.red),
-#             abs(self_rgb.green - other_rgb.green),
-#             abs(self_rgb.blue - other_rgb.blue),
-#         )
 
     def overlay(self, other):
+
         return self.screen(self.multiply(other))
 
     def invert(self):
+
         return self.difference(Color(rgb=(255, 255, 255)))
 
     # TODO: make color __hash__able and use it for comparisons
+    #       use its 24 bits for this
     def __eq__(self, other):
         is_equal = tuple((x == y) for x, y in zip(self.rgb, other.rgb))
 
@@ -250,19 +230,31 @@ def subtract(self, other):
         """
         return iter(self.color)
 
-    def __len__(self):
-        return len(self.color)
+
+    def __int__(self)
+
+        R, G, B = self.rgb
+
+        self.numeric = R<<16 | G<<8 | B
+
+        return self.numeric
+#       what is a color lenght? :)
+#     def __len__(self):
+#         return len(self.color)
+
 
     def __str__(self):
-        return ', '.join(map(str, self.color))
 
-#     def __repr__(self):
-#         base = u'<%s %s>'
-#         properties = [
-#             '%s: %s' % (prop, getattr(self, prop)) \
-#                 for prop in self.Meta.properties
-#         ]
-#         return base % (self.__class__.__name__, ', '.join(properties))
+        hex_triplet = self.hex_triplet
+        return f'#{hex_triplet}'
+
+    def __repr__(self):
+
+        hex_triplet = self.hex_triplet
+        rgb = self.rgb
+        base = f'<Color `#{hex_triplet}`; rgb {rgb}>'
+
+        return base
 
 
 class ColorWheel(object):
@@ -296,35 +288,3 @@ class ColorWheel(object):
         return HSVColor(self._phase, 1, 0.8)
 
 
-
-# Simple aliases
-# rgb = RGBColor  # rgb(100, 100, 100), or rgb(r=100, g=100, b=100)
-# hsv = HSVColor  # hsv(0.5, 1, 1), or hsv(h=0.5, s=1, v=1)
-# hex = HexColor  # hex('BADA55')
-
-
-# """
-# colors.primary
-# ==============
-# """
-# 
-# black = Color(0, 0, 0)
-# white = Color(255, 255, 255)
-# red = Color(255, 0, 0)
-# green = Color(0, 255, 0)
-# blue = Color(0, 0, 255)
-# 
-# 
-# """
-# colors.rainbow
-# ==============
-# ROYGBIV!
-# """
-# 
-# red = Color(255, 0, 0)
-# orange = Color(255, 165, 0)
-# yellow = Color(255, 255, 0)
-# green = Color(0, 128, 0)
-# blue = Color(0, 0, 255)
-# indigo = Color(75, 0, 130)
-# violet = Color(238, 130, 238)
